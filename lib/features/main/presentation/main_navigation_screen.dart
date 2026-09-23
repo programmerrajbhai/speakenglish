@@ -9,10 +9,12 @@ import '../../onboarding/presentation/learn_screen.dart';
 import '../../onboarding/presentation/progress_screen.dart';
 import '../../onboarding/presentation/settings_screen.dart';
 import '../../onboarding/services/onboarding_storage.dart';
-
+import '../../speaking/presentation/speaking_rules_flow_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  const MainNavigationScreen({
+    super.key,
+  });
 
   @override
   State<MainNavigationScreen> createState() =>
@@ -22,6 +24,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState
     extends State<MainNavigationScreen> {
   OnboardingSetup? _setup;
+
   bool _isLoading = true;
   int _currentIndex = 0;
 
@@ -52,9 +55,26 @@ class _MainNavigationScreenState
   }
 
   void _changeTab(int index) {
+    if (index < 0 || index > 4) return;
+
     setState(() {
       _currentIndex = index;
     });
+  }
+
+  Future<void> _openSpeakingRules() async {
+    final setup = _setup;
+
+    if (setup == null) return;
+
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SpeakingRulesFlowScreen(
+          setup: setup,
+        ),
+      ),
+    );
   }
 
   Future<void> _resetOnboarding() async {
@@ -73,6 +93,7 @@ class _MainNavigationScreenState
   Widget build(BuildContext context) {
     if (_isLoading || _setup == null) {
       return const Scaffold(
+        backgroundColor: AppColors.background,
         body: Center(
           child: CircularProgressIndicator(
             color: AppColors.primary,
@@ -83,16 +104,23 @@ class _MainNavigationScreenState
 
     final setup = _setup!;
 
-    final screens = [
+    final screens = <Widget>[
       HomeScreen(
         setup: setup,
         onOpenLearn: () => _changeTab(1),
+        onOpenSpeaking: _openSpeakingRules,
         onOpenTutor: () => _changeTab(2),
         onOpenProgress: () => _changeTab(3),
       ),
-      LearnScreen(setup: setup),
-      AiTutorScreen(setup: setup),
-      ProgressScreen(setup: setup),
+      LearnScreen(
+        setup: setup,
+      ),
+      AiTutorScreen(
+        setup: setup,
+      ),
+      ProgressScreen(
+        setup: setup,
+      ),
       SettingsScreen(
         setup: setup,
         onResetCourse: _resetOnboarding,
@@ -100,6 +128,7 @@ class _MainNavigationScreenState
     ];
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _currentIndex,
         children: screens,
@@ -114,7 +143,9 @@ class _MainNavigationScreenState
         NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
+            icon: Icon(
+              Icons.home_outlined,
+            ),
             selectedIcon: Icon(
               Icons.home_rounded,
               color: AppColors.primary,
@@ -122,7 +153,9 @@ class _MainNavigationScreenState
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.school_outlined),
+            icon: Icon(
+              Icons.school_outlined,
+            ),
             selectedIcon: Icon(
               Icons.school_rounded,
               color: AppColors.primary,
@@ -130,7 +163,9 @@ class _MainNavigationScreenState
             label: 'Learn',
           ),
           NavigationDestination(
-            icon: Icon(Icons.smart_toy_outlined),
+            icon: Icon(
+              Icons.smart_toy_outlined,
+            ),
             selectedIcon: Icon(
               Icons.smart_toy_rounded,
               color: AppColors.primary,
@@ -138,7 +173,9 @@ class _MainNavigationScreenState
             label: 'Tutor',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
+            icon: Icon(
+              Icons.bar_chart_outlined,
+            ),
             selectedIcon: Icon(
               Icons.bar_chart_rounded,
               color: AppColors.primary,
@@ -146,7 +183,9 @@ class _MainNavigationScreenState
             label: 'Progress',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
+            icon: Icon(
+              Icons.settings_outlined,
+            ),
             selectedIcon: Icon(
               Icons.settings_rounded,
               color: AppColors.primary,

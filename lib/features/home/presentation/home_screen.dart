@@ -3,46 +3,69 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../onboarding/model/onboarding_setup.dart';
 
-
 class HomeScreen extends StatelessWidget {
   final OnboardingSetup setup;
   final VoidCallback onOpenLearn;
   final VoidCallback onOpenTutor;
   final VoidCallback onOpenProgress;
 
+  final VoidCallback onOpenSpeaking;
+
   const HomeScreen({
     super.key,
     required this.setup,
     required this.onOpenLearn,
+    required this.onOpenSpeaking,
     required this.onOpenTutor,
     required this.onOpenProgress,
   });
 
+  static const Color _background = Color(0xFF10090B);
+  static const Color _surface = Color(0xFF1B1114);
+  static const Color _surfaceLight = Color(0xFF26181C);
+  static const Color _red = Color(0xFFFF4757);
+  static const Color _redDark = Color(0xFF8F1722);
+  static const Color _pink = Color(0xFFFF4F81);
+  static const Color _purple = Color(0xFF9C4DFF);
+  static const Color _orange = Color(0xFFFF8652);
+  static const Color _blue = Color(0xFF5B8CFF);
+  static const Color _textSecondary = Color(0xFFBBAEB1);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _background,
       body: Stack(
         children: [
-          const _HomeBackground(),
+          const _PremiumBackground(),
           SafeArea(
             bottom: false,
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+                  padding: const EdgeInsets.fromLTRB(
+                    18,
+                    16,
+                    18,
+                    30,
+                  ),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildHeader(context),
-                      const SizedBox(height: 24),
-                      _buildAiTutorBanner(),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 22),
+                      _buildTutorBanner(),
+                      const SizedBox(height: 25),
+                      _buildSectionTitle(
+                        title: 'Start learning',
+                        subtitle: 'Choose how you want to practice',
+                      ),
+                      const SizedBox(height: 14),
                       _buildFeatureGrid(),
                       const SizedBox(height: 18),
-                      _buildBottomTutorCard(),
-                      const SizedBox(height: 15),
-                      _buildDailyProgress(),
+                      _buildLanguageTutorCard(),
+                      const SizedBox(height: 14),
+                      _buildDailyGoalCard(),
                     ]),
                   ),
                 ),
@@ -58,35 +81,37 @@ class HomeScreen extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 43,
-          height: 43,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFFF5E57),
-                Color(0xFF8E1019),
+                Color(0xFFFF6B62),
+                Color(0xFFE62F42),
+                Color(0xFF8C1420),
               ],
             ),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.28),
+              color: Colors.white.withValues(alpha: 0.20),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 18,
+                color: _red.withValues(alpha: 0.35),
+                blurRadius: 20,
+                spreadRadius: 1,
               ),
             ],
           ),
           child: const Icon(
             Icons.graphic_eq_rounded,
             color: Colors.white,
-            size: 25,
+            size: 26,
           ),
         ),
-        const SizedBox(width: 11),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,21 +119,45 @@ class HomeScreen extends StatelessWidget {
               const Text(
                 'SpeakEnglish',
                 style: TextStyle(
+                  color: Colors.white,
                   fontSize: 19,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                '${setup.nativeLanguage.flag}  →  '
-                    '${setup.learningLanguage.flag}  '
-                    '${setup.learningLanguage.name}',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Text(
+                    setup.nativeLanguage.flag,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: _textSecondary,
+                      size: 13,
+                    ),
+                  ),
+                  Text(
+                    setup.learningLanguage.flag,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      setup.learningLanguage.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -118,13 +167,14 @@ class HomeScreen extends StatelessWidget {
           onPressed: () => _showCourseInformation(context),
           style: IconButton.styleFrom(
             fixedSize: const Size(43, 43),
-            backgroundColor: Colors.white.withValues(alpha: 0.06),
+            backgroundColor:
+            Colors.white.withValues(alpha: 0.055),
             side: BorderSide(
               color: Colors.white.withValues(alpha: 0.12),
             ),
           ),
           icon: const Icon(
-            Icons.settings_outlined,
+            Icons.tune_rounded,
             color: Colors.white,
             size: 21,
           ),
@@ -133,211 +183,213 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAiTutorBanner() {
-    return InkWell(
-      onTap: onOpenTutor,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        height: 171,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.15),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
+  Widget _buildTutorBanner() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpenTutor,
+        borderRadius: BorderRadius.circular(26),
+        child: Ink(
+          height: 178,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.14),
             ),
-          ],
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF25191B),
-              Color(0xFF180D0F),
-              Color(0xFF441419),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF2B1B20),
+                Color(0xFF1B0F13),
+                Color(0xFF3D121A),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.32),
+                blurRadius: 25,
+                offset: const Offset(0, 13),
+              ),
+              BoxShadow(
+                color: _red.withValues(alpha: 0.10),
+                blurRadius: 30,
+              ),
             ],
           ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -34,
-              top: -45,
-              child: Container(
-                width: 190,
-                height: 190,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.43),
-                      AppColors.primary.withValues(alpha: 0.08),
-                      Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -65,
+                  top: -80,
+                  child: Container(
+                    width: 255,
+                    height: 255,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          _red.withValues(alpha: 0.40),
+                          _red.withValues(alpha: 0.08),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -50,
+                  bottom: -90,
+                  child: Container(
+                    width: 190,
+                    height: 190,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          _purple.withValues(alpha: 0.15),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 18,
+                  bottom: 17,
+                  child: const _TutorRobot(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    19,
+                    18,
+                    137,
+                    18,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _red.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _red.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: const Text(
+                          'AI POWERED',
+                          style: TextStyle(
+                            color: Color(0xFFFF8992),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'AI Conversation\nTutor',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          height: 1.08,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        height: 39,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(
+                            color:
+                            Colors.white.withValues(alpha: 0.34),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              color: Color(0xFFFF7B85),
+                              size: 16,
+                            ),
+                            SizedBox(width: 7),
+                            Text(
+                              'Chat with AI',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(width: 7),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 15,
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-            Positioned(
-              right: 20,
-              bottom: 18,
-              child: _buildTutorRobot(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 145, 17),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'AI Conversation Tutor',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Practice real conversations\nwith your personal tutor.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    height: 41,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          color: AppColors.primaryLight,
-                          size: 17,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Chat with AI',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTutorRobot() {
-    return SizedBox(
-      width: 110,
-      height: 125,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 105,
-            height: 105,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.42),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-          Container(
-            width: 79,
-            height: 88,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF6E9EA),
-                  Color(0xFF9E8B8E),
-                  Color(0xFF342326),
-                ],
-              ),
-              border: Border.all(
-                color: AppColors.primaryLight,
-                width: 1.3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.45),
-                  blurRadius: 20,
-                ),
-              ],
-            ),
-            child: Center(
-              child: Container(
-                width: 55,
-                height: 39,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1C1214),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _RobotEye(),
-                    SizedBox(width: 10),
-                    _RobotEye(),
-                  ],
+  Widget _buildSectionTitle({
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            top: 5,
-            child: Container(
-              width: 4,
-              height: 17,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(5),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: _textSecondary,
+                  fontSize: 11,
+                ),
               ),
-            ),
+            ],
           ),
-          Positioned(
-            top: 0,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+        TextButton(
+          onPressed: onOpenLearn,
+          child: const Text('View all'),
+        ),
+      ],
     );
   }
 
@@ -348,23 +400,30 @@ class HomeScreen extends StatelessWidget {
           children: [
             Expanded(
               child: _FeatureCard(
-                title: 'Speaking Practice',
-                subtitle: 'Learn to speak real sentences',
+                title: 'Speaking\nPractice',
+                subtitle: 'Build confidence with real sentences',
                 icon: Icons.mic_rounded,
-                gradient: const [
-                  Color(0xFF6428A8),
-                  Color(0xFFFF3B55),
-                  Color(0xFF3D171D),
+                accent: _pink,
+                colors: const [
+                  Color(0xFF5E208F),
+                  Color(0xFFE72E68),
+                  Color(0xFF39151D),
                 ],
-                onTap: onOpenLearn,
+                onTap: onOpenSpeaking,
               ),
             ),
             const SizedBox(width: 13),
             Expanded(
               child: _FeatureCard(
-                title: 'Audio Passage',
-                subtitle: 'Listen and learn from real audio',
+                title: 'Audio\nPassage',
+                subtitle: 'Listen and understand naturally',
                 icon: Icons.headphones_rounded,
+                accent: _orange,
+                colors: const [
+                  Color(0xFF2A191A),
+                  Color(0xFF27161A),
+                  Color(0xFF171012),
+                ],
                 onTap: onOpenLearn,
               ),
             ),
@@ -375,18 +434,30 @@ class HomeScreen extends StatelessWidget {
           children: [
             Expanded(
               child: _FeatureCard(
-                title: 'Lessons',
-                subtitle: 'Structured lessons to build skills',
+                title: 'Structured\nLessons',
+                subtitle: 'Learn English step by step',
                 icon: Icons.school_rounded,
+                accent: _blue,
+                colors: const [
+                  Color(0xFF191A27),
+                  Color(0xFF21171D),
+                  Color(0xFF161012),
+                ],
                 onTap: onOpenLearn,
               ),
             ),
             const SizedBox(width: 13),
             Expanded(
               child: _FeatureCard(
-                title: 'Vocabulary',
-                subtitle: 'Expand words with practice',
+                title: 'Daily\nVocabulary',
+                subtitle: 'Grow useful words every day',
                 icon: Icons.menu_book_rounded,
+                accent: _purple,
+                colors: const [
+                  Color(0xFF24172D),
+                  Color(0xFF21151D),
+                  Color(0xFF161012),
+                ],
                 onTap: onOpenLearn,
               ),
             ),
@@ -396,196 +467,281 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomTutorCard() {
-    return InkWell(
-      onTap: onOpenTutor,
-      borderRadius: BorderRadius.circular(21),
-      child: Container(
-        height: 86,
-        padding: const EdgeInsets.symmetric(horizontal: 19),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(21),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.14),
+  Widget _buildLanguageTutorCard() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpenTutor,
+        borderRadius: BorderRadius.circular(21),
+        child: Ink(
+          height: 84,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(21),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.11),
+            ),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF281A1E),
+                Color(0xFF21171A),
+                Color(0xFF160E11),
+              ],
+            ),
           ),
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFF251C1E),
-              Color(0xFF342A2C),
-              Color(0xFF171012),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 18,
-              offset: const Offset(0, 9),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.psychology_alt_rounded,
-                color: AppColors.primaryLight,
-                size: 29,
-              ),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'AI Language Tutor',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Improve your language skills',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: 35,
-              height: 35,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.13),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_forward_rounded,
-                color: AppColors.primaryLight,
-                size: 19,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDailyProgress() {
-    return InkWell(
-      onTap: onOpenProgress,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.035),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.09),
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.track_changes_rounded,
-              color: AppColors.primaryLight,
-            ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(
-                'Daily goal: 0 of ${setup.dailyGoal} minutes',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: AppColors.textSecondary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showCourseInformation(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      showDragHandle: true,
-      builder: (bottomSheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 4, 22, 25),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Current Course',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _red.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _red.withValues(alpha: 0.22),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Row(
+                child: const Icon(
+                  Icons.psychology_alt_rounded,
+                  color: Color(0xFFFF7882),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 13),
+              const Expanded(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      setup.nativeLanguage.flag,
-                      style: const TextStyle(fontSize: 39),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18),
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        color: AppColors.primary,
+                      'AI Language Tutor',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
+                    SizedBox(height: 5),
                     Text(
-                      setup.learningLanguage.flag,
-                      style: const TextStyle(fontSize: 39),
+                      'Ask questions and improve your skills',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _textSecondary,
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 15),
-                Text(
-                  '${setup.nativeLanguage.name} to '
-                      '${setup.learningLanguage.name}',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
+              ),
+              const SizedBox(width: 10),
+              Container(
+                width: 37,
+                height: 37,
+                decoration: BoxDecoration(
+                  color: _red.withValues(alpha: 0.13),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Color(0xFFFF7882),
+                  size: 19,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyGoalCard() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpenProgress,
+        borderRadius: BorderRadius.circular(19),
+        child: Ink(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.035),
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.09),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 43,
+                height: 43,
+                decoration: BoxDecoration(
+                  color: _orange.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.track_changes_rounded,
+                  color: _orange,
+                  size: 23,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Daily learning goal',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${setup.dailyGoal} minutes every day',
+                      style: const TextStyle(
+                        color: _textSecondary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Text(
+                'View progress',
+                style: TextStyle(
+                  color: Color(0xFFFF7882),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 5),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Color(0xFFFF7882),
+                size: 13,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCourseInformation(
+      BuildContext context,
+      ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _surface,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (bottomSheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(22, 2, 22, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Current Course',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'Your selected learning journey',
+                style: TextStyle(
+                  color: _textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 21),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: _surfaceLight,
+                  borderRadius: BorderRadius.circular(21),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.10),
                   ),
                 ),
-                const SizedBox(height: 7),
-                Text(
-                  '${setup.dailyGoal} minutes daily goal',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _LanguageInformation(
+                        flag: setup.nativeLanguage.flag,
+                        name: setup.nativeLanguage.name,
+                        label: 'I speak',
+                      ),
+                    ),
+                    Container(
+                      width: 37,
+                      height: 37,
+                      decoration: BoxDecoration(
+                        color: _red.withValues(alpha: 0.13),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: _red,
+                        size: 19,
+                      ),
+                    ),
+                    Expanded(
+                      child: _LanguageInformation(
+                        flag: setup.learningLanguage.flag,
+                        name: setup.learningLanguage.name,
+                        label: 'I learn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: _orange.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(
+                    color: _orange.withValues(alpha: 0.22),
                   ),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule_rounded,
+                      color: _orange,
+                    ),
+                    const SizedBox(width: 11),
+                    Text(
+                      '${setup.dailyGoal} minutes daily goal',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(bottomSheetContext);
                   },
                   child: const Text('Done'),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -597,112 +753,231 @@ class _FeatureCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final Color accent;
+  final List<Color> colors;
   final VoidCallback onTap;
-  final List<Color>? gradient;
 
   const _FeatureCard({
     required this.title,
     required this.subtitle,
     required this.icon,
+    required this.accent,
+    required this.colors,
     required this.onTap,
-    this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 0.96,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(23),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(23),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.14),
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: gradient ??
-                  const [
-                    Color(0xFF271A1C),
-                    Color(0xFF171012),
-                  ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.24),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(23),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.12),
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Icon(
-                  Icons.north_east_rounded,
-                  color: Colors.white.withValues(alpha: 0.75),
-                  size: 18,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: colors,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 17,
+                  offset: const Offset(0, 9),
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 47,
-                    height: 47,
+              ],
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -25,
+                  top: -25,
+                  child: Container(
+                    width: 105,
+                    height: 105,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFF241416),
-                      border: Border.all(
-                        color: AppColors.primaryLight,
-                        width: 1.4,
+                      gradient: RadialGradient(
+                        colors: [
+                          accent.withValues(alpha: 0.20),
+                          Colors.transparent,
+                        ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                          AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 14,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 14,
+                  top: 14,
+                  child: Icon(
+                    Icons.north_east_rounded,
+                    color: Colors.white.withValues(alpha: 0.68),
+                    size: 17,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 47,
+                        height: 47,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1215),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: accent.withValues(alpha: 0.90),
+                            width: 1.3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accent.withValues(alpha: 0.30),
+                              blurRadius: 15,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Icon(
-                      icon,
-                      color: AppColors.primaryLight,
-                      size: 23,
-                    ),
+                        child: Icon(
+                          icon,
+                          color: accent,
+                          size: 23,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 1.15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: HomeScreen._textSecondary,
+                          fontSize: 9.5,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 10,
-                      height: 1.35,
-                    ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TutorRobot extends StatelessWidget {
+  const _TutorRobot();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 112,
+      height: 128,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 110,
+            height: 110,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  HomeScreen._red.withValues(alpha: 0.37),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 19,
+            child: Container(
+              width: 80,
+              height: 90,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(29),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFFF4F5),
+                    Color(0xFFB5A1A5),
+                    Color(0xFF3C292D),
+                  ],
+                ),
+                border: Border.all(
+                  color: const Color(0xFFFF737E),
+                  width: 1.3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                    HomeScreen._red.withValues(alpha: 0.43),
+                    blurRadius: 21,
                   ),
                 ],
               ),
-            ],
+              child: Center(
+                child: Container(
+                  width: 56,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1C1114),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _RobotEye(),
+                      SizedBox(width: 10),
+                      _RobotEye(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            top: 7,
+            child: Container(
+              width: 4,
+              height: 18,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF737E),
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 2,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFF737E),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -717,12 +992,13 @@ class _RobotEye extends StatelessWidget {
       width: 9,
       height: 9,
       decoration: BoxDecoration(
-        color: AppColors.primaryLight,
+        color: const Color(0xFFFF737E),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary,
-            blurRadius: 7,
+            color: HomeScreen._red,
+            blurRadius: 8,
+            spreadRadius: 1,
           ),
         ],
       ),
@@ -730,25 +1006,71 @@ class _RobotEye extends StatelessWidget {
   }
 }
 
-class _HomeBackground extends StatelessWidget {
-  const _HomeBackground();
+class _LanguageInformation extends StatelessWidget {
+  final String flag;
+  final String name;
+  final String label;
+
+  const _LanguageInformation({
+    required this.flag,
+    required this.name,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          flag,
+          style: const TextStyle(fontSize: 34),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          label,
+          style: const TextStyle(
+            color: HomeScreen._textSecondary,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PremiumBackground extends StatelessWidget {
+  const _PremiumBackground();
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: AppColors.background),
+        Container(color: HomeScreen._background),
         Positioned(
-          top: -160,
-          left: -80,
-          right: -80,
+          top: -165,
+          left: -85,
+          right: -85,
           child: Container(
-            height: 330,
+            height: 350,
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF7A2A30).withValues(alpha: 0.55),
-                  const Color(0xFF3A171B).withValues(alpha: 0.24),
+                  const Color(0xFF7A2932)
+                      .withValues(alpha: 0.48),
+                  const Color(0xFF3B171D)
+                      .withValues(alpha: 0.20),
                   Colors.transparent,
                 ],
               ),
@@ -756,15 +1078,15 @@ class _HomeBackground extends StatelessWidget {
           ),
         ),
         Positioned(
-          bottom: -100,
-          right: -100,
+          bottom: -105,
+          right: -105,
           child: Container(
-            width: 260,
-            height: 260,
+            width: 270,
+            height: 270,
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.16),
+                  HomeScreen._purple.withValues(alpha: 0.10),
                   Colors.transparent,
                 ],
               ),

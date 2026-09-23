@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../data/speaking_rules_catalog.dart';
 import '../data/speaking_rules_repository.dart';
 import '../models/speaking_rule_model.dart';
 import '../services/speaking_rule_progress_service.dart';
@@ -20,15 +20,28 @@ class SpeakingRulesScreen extends StatefulWidget {
 
 class _SpeakingRulesScreenState
     extends State<SpeakingRulesScreen> {
-  bool _isLoading = true;
+  static const Color _background = Color(0xFF10090B);
+  static const Color _surface = Color(0xFF1D1215);
+  static const Color _surfaceLight = Color(0xFF28191D);
+  static const Color _primary = Color(0xFFFF4757);
+  static const Color _success = Color(0xFF35D889);
+  static const Color _warning = Color(0xFFFFB84D);
+  static const Color _secondaryText = Color(0xFFB9AAAE);
 
   final Map<int, SpeakingRuleProgress> _progress = {};
   final Map<int, bool> _unlockedRules = {};
+
+  bool _isLoading = true;
+  int _selectedStage = 1;
 
   @override
   void initState() {
     super.initState();
     _loadProgress();
+  }
+
+  SpeakingRule? _contentFor(int ruleId) {
+    return SpeakingRulesRepository.findByIdOrNull(ruleId);
   }
 
   Future<void> _loadProgress() async {
@@ -41,12 +54,15 @@ class _SpeakingRulesScreenState
     final progressMap = <int, SpeakingRuleProgress>{};
     final unlockedMap = <int, bool>{};
 
-    for (final rule in SpeakingRulesRepository.rules) {
-      progressMap[rule.id] =
-      await SpeakingRuleProgressService.getProgress(rule.id);
+    for (final catalogRule in SpeakingRulesCatalog.rules) {
+      progressMap[catalogRule.id] =
+      await SpeakingRuleProgressService.getProgress(
+        catalogRule.id,
+      );
 
-      unlockedMap[rule.id] =
-      await SpeakingRuleProgressService.isRuleUnlocked(rule.id);
+      // Content থাকা সব Rule শুরু থেকেই unlocked।
+      unlockedMap[catalogRule.id] =
+          _contentFor(catalogRule.id) != null;
     }
 
     if (!mounted) return;
@@ -64,137 +80,257 @@ class _SpeakingRulesScreenState
     });
   }
 
-  Future<void> _openRule(SpeakingRule rule) async {
-    final unlocked = _unlockedRules[rule.id] ?? false;
+  Future<void> _openRule(
+      SpeakingRuleCatalogItem catalogRule,
+      ) async {
+    final content = _contentFor(catalogRule.id);
 
-    if (!unlocked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Complete Rule ${rule.id - 1} to unlock this rule.',
-          ),
-        ),
+    if (content == null) {
+      _showMessage(
+        'Rule ${catalogRule.id} content is coming soon.',
       );
       return;
     }
 
-    await widget.onOpenRule(rule);
+    await widget.onOpenRule(content);
 
     if (!mounted) return;
     await _loadProgress();
   }
 
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: _surfaceLight,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: const Text(
-          'Speaking Rules',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primary,
-        ),
-      )
-          : RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: _loadProgress,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
-          ),
-          slivers: [
-            SliverToBoxAdapter(
-              child: _buildHeader(),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                18,
-                8,
-                18,
-                35,
-              ),
-              sliver: SliverList.separated(
-                itemCount:
-                SpeakingRulesRepository.rules.length,
-                separatorBuilder: (_, __) =>
-                const SizedBox(height: 14),
-                itemBuilder: (context, index) {
-                  final rule =
-                  SpeakingRulesRepository.rules[index];
+    final stageRules = SpeakingRulesCatalog.rules
+        .where((rule) => rule.stage == _selectedStage)
+        .toList(growable: false);
 
-                  return _buildRuleCard(rule);
-                },
-              ),
+    return Scaffold(
+      backgroundColor: _background,
+      body: Stack(
+        children: [
+          const _RoadmapBackground(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(
+                    child: CircularProgressIndicator(
+                      color: _primary,
+                    ),
+                  )
+                      : RefreshIndicator(
+                    color: _primary,
+                    backgroundColor: _surfaceLight,
+                    onRefresh: _loadProgress,
+                    child: ListView(
+                      cacheExtent: 900,
+                      keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior
+                          .onDrag,
+                      physics:
+                      const BouncingScrollPhysics(
+                        parent:
+                        AlwaysScrollableScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(
+                        18,
+                        8,
+                        18,
+                        36,
+                      ),
+                      children: [
+                        _buildJourneyHeader(),
+                        const SizedBox(height: 20),
+                        _buildStageSelector(),
+                        const SizedBox(height: 22),
+                        _buildStageHeader(),
+                        const SizedBox(height: 16),
+                        ...List.generate(
+                          stageRules.length,
+                              (index) {
+                            return _buildRoadmapItem(
+                              stageRules[index],
+                              index,
+                              stageRules.length,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    final rules = SpeakingRulesRepository.rules;
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(7, 6, 17, 8),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Back',
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 3),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Speaking Roadmap',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '60 rules • Beginner to confident speaker',
+                  style: TextStyle(
+                    color: _secondaryText,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 11,
+              vertical: 7,
+            ),
+            decoration: BoxDecoration(
+              color: _primary.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _primary.withValues(alpha: 0.28),
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Color(0xFFFF826A),
+                  size: 17,
+                ),
+                SizedBox(width: 5),
+                Text(
+                  '60',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    final completedCount = rules.where((rule) {
-      return _progress[rule.id]?.completed ?? false;
-    }).length;
+  Widget _buildJourneyHeader() {
+    final completedCount =
+        SpeakingRulesCatalog.rules.where((rule) {
+          return _progress[rule.id]?.completed ?? false;
+        }).length;
 
-    final percentage = rules.isEmpty
-        ? 0.0
-        : completedCount / rules.length;
+    final availableCount =
+    SpeakingRulesRepository.rules.length.clamp(0, 60);
+
+    final overallProgress =
+    (completedCount / 60).clamp(0.0, 1.0);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 10, 18, 22),
-      padding: const EdgeInsets.all(21),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.30),
-            AppColors.card,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.40),
+          color: _primary.withValues(alpha: 0.34),
         ),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF351A21),
+            Color(0xFF211216),
+            Color(0xFF151013),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withValues(alpha: 0.10),
+            blurRadius: 28,
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              ContainerIcon(
-                icon: Icons.record_voice_over_rounded,
+              Container(
+                width: 57,
+                height: 57,
+                decoration: BoxDecoration(
+                  color: _primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: _primary.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.record_voice_over_rounded,
+                  color: Color(0xFFFF7A84),
+                  size: 29,
+                ),
               ),
-              SizedBox(width: 13),
-              Expanded(
+              const SizedBox(width: 13),
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Speak English Step by Step',
+                      'Your speaking journey',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                     SizedBox(height: 5),
                     Text(
-                      'Learn rules, listen and practice speaking.',
+                      'Learn English step by step with rules and real speaking practice.',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
+                        color: _secondaryText,
+                        fontSize: 11,
                         height: 1.4,
                       ),
                     ),
@@ -203,21 +339,23 @@ class _SpeakingRulesScreenState
               ),
             ],
           ),
-          const SizedBox(height: 21),
+          const SizedBox(height: 19),
           Row(
             children: [
               Text(
-                '$completedCount/${rules.length} Rules',
+                '$completedCount/60 completed',
                 style: const TextStyle(
-                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const Spacer(),
               Text(
-                '${(percentage * 100).round()}%',
+                '$availableCount playable',
                 style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
+                  color: _secondaryText,
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -226,13 +364,12 @@ class _SpeakingRulesScreenState
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: LinearProgressIndicator(
-              value: percentage,
+              value: overallProgress,
               minHeight: 9,
               backgroundColor:
-              AppColors.background.withValues(alpha: 0.7),
-              valueColor: const AlwaysStoppedAnimation(
-                AppColors.primary,
-              ),
+              Colors.black.withValues(alpha: 0.28),
+              valueColor:
+              const AlwaysStoppedAnimation(_primary),
             ),
           ),
         ],
@@ -240,214 +377,385 @@ class _SpeakingRulesScreenState
     );
   }
 
-  Widget _buildRuleCard(SpeakingRule rule) {
-    final progress = _progress[rule.id] ??
-        SpeakingRuleProgress.empty(rule.id);
+  Widget _buildStageSelector() {
+    return SizedBox(
+      height: 43,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        cacheExtent: 500,
+        physics: const BouncingScrollPhysics(),
+        itemCount: 6,
+        separatorBuilder: (_, __) =>
+        const SizedBox(width: 9),
+        itemBuilder: (context, index) {
+          final stage = index + 1;
+          final selected = stage == _selectedStage;
 
-    final unlocked = _unlockedRules[rule.id] ?? false;
-    final completed = progress.completed;
+          return ChoiceChip(
+            selected: selected,
+            showCheckmark: false,
+            onSelected: (_) {
+              if (_selectedStage == stage) return;
 
-    final practiceProgress =
-    (progress.processedCount / 20).clamp(0.0, 1.0);
+              setState(() {
+                _selectedStage = stage;
+              });
+            },
+            label: Text(
+              'Stage $stage',
+              style: TextStyle(
+                color:
+                selected ? Colors.white : _secondaryText,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            selectedColor: _primary,
+            backgroundColor: _surface,
+            side: BorderSide(
+              color: selected
+                  ? _primary
+                  : Colors.white.withValues(alpha: 0.11),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-    Color statusColor;
-    IconData statusIcon;
-    String buttonText;
+  Widget _buildStageHeader() {
+    final stageIndex = _selectedStage - 1;
 
-    if (!unlocked) {
-      statusColor = AppColors.textSecondary;
-      statusIcon = Icons.lock_rounded;
-      buttonText = 'Locked';
-    } else if (completed) {
-      statusColor = AppColors.success;
-      statusIcon = Icons.check_circle_rounded;
-      buttonText = 'Practice Again';
-    } else if (progress.processedCount > 0) {
-      statusColor = AppColors.warning;
-      statusIcon = Icons.play_circle_fill_rounded;
-      buttonText = 'Continue';
-    } else {
-      statusColor = AppColors.primary;
-      statusIcon = Icons.play_circle_fill_rounded;
-      buttonText = 'Start Rule';
-    }
-
-    return Opacity(
-      opacity: unlocked ? 1 : 0.62,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(23),
-        onTap: () => _openRule(rule),
-        child: Container(
-          padding: const EdgeInsets.all(18),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 43,
+          height: 43,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(23),
+            color: _primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: completed
-                  ? AppColors.success.withValues(alpha: 0.55)
-                  : unlocked
-                  ? AppColors.border
-                  : AppColors.border.withValues(alpha: 0.50),
+              color: _primary.withValues(alpha: 0.20),
             ),
           ),
+          child: Text(
+            '$_selectedStage',
+            style: const TextStyle(
+              color: _primary,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.13),
-                      borderRadius: BorderRadius.circular(17),
-                    ),
-                    child: unlocked
-                        ? Text(
-                      '${rule.id}',
-                      style: TextStyle(
-                        color: statusColor,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    )
-                        : Icon(
-                      Icons.lock_rounded,
-                      color: statusColor,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Rule ${rule.id}',
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            _buildLevelBadge(rule.level),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          rule.title,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          rule.formula,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              Text(
+                SpeakingRulesCatalog
+                    .stageTitles[stageIndex],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-              const SizedBox(height: 17),
-              Row(
-                children: [
-                  _smallInformation(
-                    Icons.task_alt_rounded,
-                    '${progress.processedCount}/20',
-                  ),
-                  const SizedBox(width: 15),
-                  _smallInformation(
-                    Icons.graphic_eq_rounded,
-                    '${progress.bestScore}%',
-                  ),
-                  const Spacer(),
-                  Icon(
-                    statusIcon,
-                    color: statusColor,
-                    size: 19,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    buttonText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 13),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: LinearProgressIndicator(
-                  value: practiceProgress,
-                  minHeight: 7,
-                  backgroundColor: AppColors.background,
-                  valueColor: AlwaysStoppedAnimation(
-                    completed
-                        ? AppColors.success
-                        : AppColors.primary,
-                  ),
+              const SizedBox(height: 4),
+              Text(
+                SpeakingRulesCatalog
+                    .stageSubtitles[stageIndex],
+                style: const TextStyle(
+                  color: _secondaryText,
+                  fontSize: 10,
+                  height: 1.35,
                 ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildLevelBadge(String level) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.11),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        level,
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
+  Widget _buildRoadmapItem(
+      SpeakingRuleCatalogItem rule,
+      int index,
+      int totalItems,
+      ) {
+    final progress = _progress[rule.id] ??
+        SpeakingRuleProgress.empty(rule.id);
+
+    final contentAvailable = _contentFor(rule.id) != null;
+
+    // Content থাকা Rule শুরু থেকেই unlocked।
+    final unlocked =
+        _unlockedRules[rule.id] ?? contentAvailable;
+
+    final completed = progress.completed;
+    final started = progress.processedCount > 0;
+
+    final Color statusColor;
+    final IconData statusIcon;
+    final String statusText;
+
+    if (!contentAvailable) {
+      statusColor = _secondaryText;
+      statusIcon = Icons.schedule_rounded;
+      statusText = 'Coming soon';
+    } else if (completed) {
+      statusColor = _success;
+      statusIcon = Icons.check_rounded;
+      statusText = 'Completed';
+    } else if (started) {
+      statusColor = _warning;
+      statusIcon = Icons.play_arrow_rounded;
+      statusText = 'Continue';
+    } else {
+      statusColor = _primary;
+      statusIcon = Icons.play_arrow_rounded;
+      statusText = 'Start';
+    }
+
+    final titleColor = contentAvailable
+        ? Colors.white
+        : Colors.white.withValues(alpha: 0.48);
+
+    final subtitleColor = contentAvailable
+        ? _secondaryText
+        : _secondaryText.withValues(alpha: 0.44);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 47,
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: () => _openRule(rule),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 47,
+                  height: 47,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color:
+                    statusColor.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color:
+                      statusColor.withValues(alpha: 0.65),
+                      width: 1.4,
+                    ),
+                    boxShadow:
+                    contentAvailable && unlocked
+                        ? [
+                      BoxShadow(
+                        color: statusColor.withValues(
+                          alpha: 0.18,
+                        ),
+                        blurRadius: 15,
+                      ),
+                    ]
+                        : null,
+                  ),
+                  child: completed
+                      ? Icon(
+                    Icons.check_rounded,
+                    color: statusColor,
+                    size: 23,
+                  )
+                      : Text(
+                    '${rule.id}',
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+              if (index != totalItems - 1)
+                Container(
+                  width: 2,
+                  height: 103,
+                  margin:
+                  const EdgeInsets.symmetric(vertical: 5),
+                  decoration: BoxDecoration(
+                    color: completed
+                        ? _success.withValues(alpha: 0.38)
+                        : Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 13),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _openRule(rule),
+                borderRadius: BorderRadius.circular(20),
+                child: Ink(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: completed
+                        ? _success.withValues(alpha: 0.055)
+                        : _surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: completed
+                          ? _success.withValues(alpha: 0.40)
+                          : contentAvailable
+                          ? _primary.withValues(alpha: 0.23)
+                          : Colors.white
+                          .withValues(alpha: 0.075),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              rule.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: titleColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(
+                                alpha: 0.11,
+                              ),
+                              borderRadius:
+                              BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  statusIcon,
+                                  color: statusColor,
+                                  size: 13,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  statusText,
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        rule.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: subtitleColor,
+                          fontSize: 10,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _buildSmallInformation(
+                            Icons.task_alt_rounded,
+                            '${progress.processedCount}/20',
+                          ),
+                          const SizedBox(width: 13),
+                          _buildSmallInformation(
+                            Icons.graphic_eq_rounded,
+                            '${progress.bestScore}%',
+                          ),
+                          const Spacer(),
+                          Text(
+                            rule.level,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (started || completed) ...[
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          child: LinearProgressIndicator(
+                            value:
+                            (progress.processedCount / 20)
+                                .clamp(0.0, 1.0),
+                            minHeight: 5,
+                            backgroundColor: Colors.black
+                                .withValues(alpha: 0.25),
+                            valueColor: AlwaysStoppedAnimation(
+                              completed ? _success : _primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _smallInformation(
+  Widget _buildSmallInformation(
       IconData icon,
-      String value,
+      String text,
       ) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
-          size: 16,
-          color: AppColors.textSecondary,
+          color: _secondaryText,
+          size: 14,
         ),
         const SizedBox(width: 5),
         Text(
-          value,
+          text,
           style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
+            color: _secondaryText,
+            fontSize: 9,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -456,28 +764,51 @@ class _SpeakingRulesScreenState
   }
 }
 
-class ContainerIcon extends StatelessWidget {
-  final IconData icon;
-
-  const ContainerIcon({
-    super.key,
-    required this.icon,
-  });
+class _RoadmapBackground extends StatelessWidget {
+  const _RoadmapBackground();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 51,
-      height: 51,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(17),
-      ),
-      child: Icon(
-        icon,
-        color: AppColors.primary,
-        size: 28,
-      ),
+    return Stack(
+      children: [
+        Container(
+          color: _SpeakingRulesScreenState._background,
+        ),
+        Positioned(
+          top: -140,
+          left: -80,
+          right: -80,
+          child: Container(
+            height: 300,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF792833)
+                      .withValues(alpha: 0.38),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -110,
+          right: -110,
+          child: Container(
+            width: 270,
+            height: 270,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF763CFF)
+                      .withValues(alpha: 0.08),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
